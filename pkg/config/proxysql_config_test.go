@@ -9,7 +9,7 @@ import (
 func TestProxySQLAddressToDSN(t *testing.T) {
 	{
 		c := &ProxySQLConfigurationSettings{User: "freno"}
-		test.S(t).ExpectEquals(c.AddressToDSN("proxysql-123abcd.test:6032"), "mysql://freno:*****@proxysql-123abcd.test:6032/"+proxySQLDefaultDatabase)
+		test.S(t).ExpectEquals(c.AddressToDSN("proxysql-123abcd.test:6032"), "mysql://freno:*****@proxysql-123abcd.test:6032/"+ProxySQLDefaultDatabase)
 	}
 }
 

@@ -53,8 +53,8 @@ func (c *Client) GetDB(settings config.ProxySQLConfigurationSettings) (*sql.DB, 
 		if db, found := c.dbs[addr]; found {
 			return db, addr, nil
 		}
-		db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/stats?interpolateParams=true&timeout=500ms",
-			settings.User, settings.Password, addr,
+		db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?interpolateParams=true&timeout=500ms",
+			settings.User, settings.Password, addr, config.ProxySQLDefaultDatabase,
 		))
 		if err != nil {
 			lastErr = err
@@ -64,7 +64,7 @@ func (c *Client) GetDB(settings config.ProxySQLConfigurationSettings) (*sql.DB, 
 			lastErr = err
 			continue
 		}
-		log.Debugf("connected to ProxySQL at mysql://%s/stats", addr)
+		log.Debugf("connected to ProxySQL at %s", settings.AddressToDSN(addr))
 		c.dbs[addr] = db
 		return c.dbs[addr], addr, nil
 	}

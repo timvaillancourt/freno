@@ -6,7 +6,7 @@ import "fmt"
 // ProxySQL-specific configuration
 //
 
-const proxySQLDefaultDatabase = "stats"
+const ProxySQLDefaultDatabase = "stats"
 
 type ProxySQLConfigurationSettings struct {
 	Addresses           []string
@@ -17,7 +17,7 @@ type ProxySQLConfigurationSettings struct {
 }
 
 func (settings ProxySQLConfigurationSettings) AddressToDSN(address string) string {
-	return fmt.Sprintf("mysql://%s:*****@%s/%s", settings.User, address, proxySQLDefaultDatabase)
+	return fmt.Sprintf("mysql://%s:*****@%s/%s", settings.User, address, ProxySQLDefaultDatabase)
 }
 
 func (settings *ProxySQLConfigurationSettings) IsEmpty() bool {
