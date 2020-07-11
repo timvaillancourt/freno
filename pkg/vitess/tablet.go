@@ -30,7 +30,7 @@ func (c *Client) cacheTablet(settings config.VitessConfigurationSettings, tablet
 }
 
 // GetTablet reads from vitess /api/tablets/<tabletAlias> and returns a Tablet struct
-func (c *Client) GetTablet(settings config.VitessConfigurationSettings, tabletAlias *topodata.TabletAlias) (tablet *Tablet, err error) {
+func (c *Client) getTablet(settings config.VitessConfigurationSettings, tabletAlias *topodata.TabletAlias) (tablet *Tablet, err error) {
 	if tablet, found := c.tabletCache.Get(tabletCacheKey(tabletAlias)); found {
 		return tablet.(*Tablet), nil
 	}

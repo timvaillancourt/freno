@@ -15,7 +15,7 @@ func TestGetTabletStatuses(t *testing.T) {
 	vtctldApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.String() {
 		case "/api/tablet_statuses/?cell=all&keyspace=test_ks&metric=health&type=replica":
-			data := []*TabletStatuses{
+			data := []*tabletStatuses{
 				{
 					Aliases: [][]*topodata.TabletAlias{
 						{
@@ -43,18 +43,19 @@ func TestGetTabletStatuses(t *testing.T) {
 	}))
 	defer vtctldApi.Close()
 
-	tabletStatuses, err := GetTabletStatuses(config.VitessConfigurationSettings{
+	c := NewClient()
+	statuses, err := c.getTabletStatuses(config.VitessConfigurationSettings{
 		API:      vtctldApi.URL,
 		Keyspace: "test_ks",
 	})
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	if len(tabletStatuses) != 2 {
+	if len(statuses) != 2 {
 		t.Fatal("expected only 2 tablets")
 	}
 
-	healthyTablet := tabletStatuses[0]
+	healthyTablet := statuses[0]
 	if healthyTablet.Alias.Cell != "test" || healthyTablet.Alias.Uid != 123456 {
 		t.Fatalf("expected tablet alias with cell='test' and uid=123456, got %v", healthyTablet.Alias)
 	}
@@ -62,7 +63,7 @@ func TestGetTabletStatuses(t *testing.T) {
 		t.Fatal("expected healthy tablet")
 	}
 
-	degradedTablet := tabletStatuses[1]
+	degradedTablet := statuses[1]
 	if degradedTablet.Health != tabletDegraded {
 		t.Fatal("expected degraded tablet")
 	}

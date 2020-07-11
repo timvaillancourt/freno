@@ -38,7 +38,7 @@ func NewClient() *Client {
 }
 
 func (c *Client) GetHealthyReplicas(settings config.VitessConfigurationSettings) (tablets []*Tablet, err error) {
-	statuses, err := GetTabletStatuses(settings)
+	statuses, err := c.getTabletStatuses(settings)
 	if err != nil {
 		return tablets, err
 	}
@@ -47,7 +47,7 @@ func (c *Client) GetHealthyReplicas(settings config.VitessConfigurationSettings)
 		if status.Health != tabletHealthy {
 			continue
 		}
-		tablet, err := c.GetTablet(settings, status.Alias)
+		tablet, err := c.getTablet(settings, status.Alias)
 		if err == nil {
 			tablets = append(tablets, tablet)
 		}

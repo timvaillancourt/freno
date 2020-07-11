@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 
 	"github.com/github/freno/pkg/config"
 	"vitess.io/vitess/go/vt/proto/topodata"
@@ -20,43 +19,48 @@ const (
 	tabletUnhealthy tabletHealthState = 2
 )
 
-type TabletStatus struct {
-	Alias  *topodata.TabletAlias
-	Health tabletHealthState
-}
-
-type TabletStatuses struct {
+type tabletStatuses struct {
 	Aliases [][]*topodata.TabletAlias
 	Data    [][]tabletHealthState
 }
 
-func GetTabletStatuses(settings config.VitessConfigurationSettings) ([]*TabletStatus, error) {
+type tabletStatus struct {
+	Alias  *topodata.TabletAlias
+	Health tabletHealthState
+}
+
+func (c *Client) getTabletStatuses(settings config.VitessConfigurationSettings) ([]*tabletStatus, error) {
 	url := fmt.Sprintf("%s/tablet_statuses/?cell=all&keyspace=%s&metric=health&type=replica",
 		constructAPIURL(settings),
 		settings.Keyspace,
 	)
-	data, err := http.Get(url)
+	resp, err := c.httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	defer data.Body.Close()
-	body, err := ioutil.ReadAll(data.Body)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := make([]TabletStatuses, 0)
-	if err := json.Unmarshal(body, &resp); err != nil {
+	statusesSlice := make([]tabletStatuses, 0)
+	if err := json.Unmarshal(body, &statusesSlice); err != nil {
 		return nil, err
 	}
-	if len(resp) != 1 {
+	if len(statusesSlice) != 1 {
 		return nil, err
 	}
 
-	statuses := resp[0]
-	tablets := make([]*TabletStatus, 0)
+	statuses := statusesSlice[0]
+	tablets := make([]*tabletStatus, 0)
 	for i, alias := range statuses.Aliases {
-		tablets = append(tablets, &TabletStatus{
+		tablets = append(tablets, &tabletStatus{
 			Alias:  alias[0],
 			Health: statuses.Data[i][0],
 		})

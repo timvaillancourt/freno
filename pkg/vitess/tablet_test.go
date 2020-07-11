@@ -13,7 +13,6 @@ import (
 )
 
 func TestGetTablet(t *testing.T) {
-	c := NewClient()
 	vtctldApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.String() {
 		case "/api/tablets/test-123456":
@@ -29,13 +28,14 @@ func TestGetTablet(t *testing.T) {
 	}))
 	defer vtctldApi.Close()
 
+	c := NewClient()
 	settings := config.VitessConfigurationSettings{
 		API: vtctldApi.URL,
 	}
 	t.Run("success", func(t *testing.T) {
 		settings.TimeoutSecs = 1
 		tabletAlias := &topodata.TabletAlias{Cell: "test", Uid: 123456}
-		tablet, err := c.GetTablet(settings, tabletAlias)
+		tablet, err := c.getTablet(settings, tabletAlias)
 		if err != nil {
 			t.Fatalf("Expected no error, got %q", err)
 		}
@@ -56,7 +56,7 @@ func TestGetTablet(t *testing.T) {
 	t.Run("not-found", func(t *testing.T) {
 		settings.TimeoutSecs = 0
 		tabletAlias := &topodata.TabletAlias{Cell: "test", Uid: 1}
-		tablet, err := c.GetTablet(settings, tabletAlias)
+		tablet, err := c.getTablet(settings, tabletAlias)
 		if err != nil {
 			t.Fatalf("Expected no error, got %q", err)
 		}
@@ -76,7 +76,7 @@ func TestGetTablet(t *testing.T) {
 
 	t.Run("failed", func(t *testing.T) {
 		vtctldApi.Close() // kill the mock vitess API
-		_, err := c.GetTablet(settings, &topodata.TabletAlias{Cell: "test", Uid: 123})
+		_, err := c.getTablet(settings, &topodata.TabletAlias{Cell: "test", Uid: 123})
 		if err == nil {
 			t.Fatal("Expected error, got nil")
 		}

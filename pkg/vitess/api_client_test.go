@@ -21,7 +21,7 @@ func TestGetHealthyReplicas(t *testing.T) {
 			})
 			fmt.Fprint(w, string(bytes))
 		case "/api/tablet_statuses/?cell=all&keyspace=test_ks&metric=health&type=replica":
-			data := []*TabletStatuses{
+			data := []*tabletStatuses{
 				{
 					Aliases: [][]*topodata.TabletAlias{
 						{
