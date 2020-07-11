@@ -11,9 +11,15 @@ import (
 	"vitess.io/vitess/go/vt/proto/topodata"
 )
 
-func TestGetTabletStatuses(t *testing.T) {
+func TestGetHealthyReplicas(t *testing.T) {
 	vtctldApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.String() {
+		case "/api/tablets/test-123456":
+			bytes, _ := json.Marshal(Tablet{
+				MysqlHostname: "test-replica",
+				MysqlPort:     3306,
+			})
+			fmt.Fprint(w, string(bytes))
 		case "/api/tablet_statuses/?cell=all&keyspace=test_ks&metric=health&type=replica":
 			data := []*TabletStatuses{
 				{
@@ -43,27 +49,21 @@ func TestGetTabletStatuses(t *testing.T) {
 	}))
 	defer vtctldApi.Close()
 
-	tabletStatuses, err := GetTabletStatuses(config.VitessConfigurationSettings{
+	c := NewClient()
+	tablets, err := c.GetHealthyReplicas(config.VitessConfigurationSettings{
 		API:      vtctldApi.URL,
 		Keyspace: "test_ks",
 	})
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	if len(tabletStatuses) != 2 {
-		t.Fatal("expected only 2 tablets")
+
+	if len(tablets) != 1 {
+		t.Fatalf("expected only 1 healthy tablet, got %d", len(tablets))
 	}
 
-	healthyTablet := tabletStatuses[0]
-	if healthyTablet.Alias.Cell != "test" || healthyTablet.Alias.Uid != 123456 {
-		t.Fatalf("expected tablet alias with cell='test' and uid=123456, got %v", healthyTablet.Alias)
-	}
-	if healthyTablet.Health != tabletHealthy {
-		t.Fatal("expected healthy tablet")
-	}
-
-	degradedTablet := tabletStatuses[1]
-	if degradedTablet.Health != tabletDegraded {
-		t.Fatal("expected degraded tablet")
+	tablet := tablets[0]
+	if tablet.MysqlHostname != "test-replica" || tablet.MysqlPort != 3306 {
+		t.Fatalf("expected hostname/port 'test-replica:3306', got %v", tablet)
 	}
 }

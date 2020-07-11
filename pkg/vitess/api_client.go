@@ -7,9 +7,13 @@ import (
 	"time"
 
 	"github.com/github/freno/pkg/config"
+	"github.com/patrickmn/go-cache"
 )
 
-const defaultTimeout = time.Duration(5) * time.Second
+const (
+	defaultTabletCacheExpiry = 3 * time.Minute
+	defaultTimeout           = time.Duration(5) * time.Second
+)
 
 func constructAPIURL(settings config.VitessConfigurationSettings) (url string) {
 	api := strings.TrimRight(settings.API, "/")
@@ -20,7 +24,8 @@ func constructAPIURL(settings config.VitessConfigurationSettings) (url string) {
 }
 
 type Client struct {
-	httpClient *http.Client
+	httpClient  *http.Client
+	tabletCache *cache.Cache
 }
 
 func NewClient() *Client {
@@ -28,9 +33,24 @@ func NewClient() *Client {
 		httpClient: &http.Client{
 			Timeout: defaultTimeout,
 		},
+		tabletCache: cache.New(defaultTabletCacheExpiry, time.Second),
 	}
 }
 
-func (c *Client) GetHealthyReplicas(settings config.VitessConfigurationSettings) (tablets []Tablet, err error) {
-	return c.GetKeyspaceTablets(settings)
+func (c *Client) GetHealthyReplicas(settings config.VitessConfigurationSettings) (tablets []*Tablet, err error) {
+	statuses, err := GetTabletStatuses(settings)
+	if err != nil {
+		return tablets, err
+	}
+
+	for _, status := range statuses {
+		if status.Health != tabletHealthy {
+			continue
+		}
+		tablet, err := c.GetTablet(settings, status.Alias)
+		if err == nil {
+			tablets = append(tablets, tablet)
+		}
+	}
+	return tablets, err
 }

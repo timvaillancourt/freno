@@ -20,7 +20,7 @@ const (
 	tabletUnhealthy tabletHealthState = 2
 )
 
-type TabletHealth struct {
+type TabletStatus struct {
 	Alias  *topodata.TabletAlias
 	Health tabletHealthState
 }
@@ -30,7 +30,7 @@ type TabletStatuses struct {
 	Data    [][]tabletHealthState
 }
 
-func GetKeyspaceTabletStatuses(settings config.VitessConfigurationSettings) ([]*TabletHealth, error) {
+func GetTabletStatuses(settings config.VitessConfigurationSettings) ([]*TabletStatus, error) {
 	url := fmt.Sprintf("%s/tablet_statuses/?cell=all&keyspace=%s&metric=health&type=replica",
 		constructAPIURL(settings),
 		settings.Keyspace,
@@ -54,9 +54,9 @@ func GetKeyspaceTabletStatuses(settings config.VitessConfigurationSettings) ([]*
 	}
 
 	statuses := resp[0]
-	tablets := make([]*TabletHealth, 0)
+	tablets := make([]*TabletStatus, 0)
 	for i, alias := range statuses.Aliases {
-		tablets = append(tablets, &TabletHealth{
+		tablets = append(tablets, &TabletStatus{
 			Alias:  alias[0],
 			Health: statuses.Data[i][0],
 		})

@@ -5,10 +5,11 @@ package config
 //
 
 type VitessConfigurationSettings struct {
-	API         string
-	Keyspace    string
-	Shard       string
-	TimeoutSecs uint
+	API                string
+	Keyspace           string
+	Shard              string
+	TabletCacheTTLSecs uint
+	TimeoutSecs        uint
 }
 
 func (settings *VitessConfigurationSettings) IsEmpty() bool {
