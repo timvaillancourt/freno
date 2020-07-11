@@ -29,11 +29,12 @@ type tabletStatus struct {
 	Health tabletHealthState
 }
 
-func (c *Client) getTabletStatuses(settings config.VitessConfigurationSettings) ([]*tabletStatus, error) {
+func (c *Client) getReplicaTabletStatuses(settings config.VitessConfigurationSettings) ([]*tabletStatus, error) {
 	url := fmt.Sprintf("%s/tablet_statuses/?cell=all&keyspace=%s&metric=health&type=replica",
 		constructAPIURL(settings),
 		settings.Keyspace,
 	)
+	c.setClientTimeout(settings)
 	resp, err := c.httpClient.Get(url)
 	if err != nil {
 		return nil, err

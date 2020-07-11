@@ -21,9 +21,11 @@ func TestGetTablet(t *testing.T) {
 				MysqlPort:     3306,
 			})
 			fmt.Fprint(w, string(data))
-		default:
+		case "/api/tablets/test-1":
 			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, "{}")
+			fmt.Fprint(w, `{}`)
+		default:
+			t.Fatalf("unexpected vtctld API call: %q", r.URL.String())
 		}
 	}))
 	defer vtctldApi.Close()

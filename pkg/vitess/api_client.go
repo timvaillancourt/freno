@@ -37,12 +37,19 @@ func NewClient() *Client {
 	}
 }
 
+func (c *Client) setClientTimeout(settings config.VitessConfigurationSettings) {
+	if settings.TimeoutSecs == 0 {
+		c.httpClient.Timeout = defaultTimeout
+	} else {
+		c.httpClient.Timeout = time.Duration(settings.TimeoutSecs) * time.Second
+	}
+}
+
 func (c *Client) GetHealthyReplicas(settings config.VitessConfigurationSettings) (tablets []*Tablet, err error) {
-	statuses, err := c.getTabletStatuses(settings)
+	statuses, err := c.getReplicaTabletStatuses(settings)
 	if err != nil {
 		return tablets, err
 	}
-
 	for _, status := range statuses {
 		if status.Health != tabletHealthy {
 			continue

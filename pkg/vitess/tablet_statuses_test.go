@@ -11,7 +11,7 @@ import (
 	"vitess.io/vitess/go/vt/proto/topodata"
 )
 
-func TestGetTabletStatuses(t *testing.T) {
+func TestGetReplicaTabletStatuses(t *testing.T) {
 	vtctldApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.String() {
 		case "/api/tablet_statuses/?cell=all&keyspace=test_ks&metric=health&type=replica":
@@ -37,6 +37,11 @@ func TestGetTabletStatuses(t *testing.T) {
 			}
 			bytes, _ := json.Marshal(data)
 			fmt.Fprint(w, string(bytes))
+		case "/api/tablet_statuses/?cell=all&keyspace=not-found&metric=health&type=replica":
+			w.WriteHeader(http.StatusNotFound)
+			data := []*tabletStatuses{{}}
+			bytes, _ := json.Marshal(data)
+			fmt.Fprint(w, string(bytes))
 		default:
 			t.Fatalf("unexpected vtctld API call: %q", r.URL.String())
 		}
@@ -44,27 +49,53 @@ func TestGetTabletStatuses(t *testing.T) {
 	defer vtctldApi.Close()
 
 	c := NewClient()
-	statuses, err := c.getTabletStatuses(config.VitessConfigurationSettings{
-		API:      vtctldApi.URL,
-		Keyspace: "test_ks",
+
+	t.Run("success", func(t *testing.T) {
+		statuses, err := c.getReplicaTabletStatuses(config.VitessConfigurationSettings{
+			API:      vtctldApi.URL,
+			Keyspace: "test_ks",
+		})
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		if len(statuses) != 2 {
+			t.Fatal("expected only 2 tablets")
+		}
+
+		healthyTablet := statuses[0]
+		if healthyTablet.Alias.Cell != "test" || healthyTablet.Alias.Uid != 123456 {
+			t.Fatalf("expected tablet alias with cell='test' and uid=123456, got %v", healthyTablet.Alias)
+		}
+		if healthyTablet.Health != tabletHealthy {
+			t.Fatal("expected healthy tablet")
+		}
+
+		degradedTablet := statuses[1]
+		if degradedTablet.Health != tabletDegraded {
+			t.Fatal("expected degraded tablet")
+		}
 	})
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	if len(statuses) != 2 {
-		t.Fatal("expected only 2 tablets")
-	}
 
-	healthyTablet := statuses[0]
-	if healthyTablet.Alias.Cell != "test" || healthyTablet.Alias.Uid != 123456 {
-		t.Fatalf("expected tablet alias with cell='test' and uid=123456, got %v", healthyTablet.Alias)
-	}
-	if healthyTablet.Health != tabletHealthy {
-		t.Fatal("expected healthy tablet")
-	}
+	t.Run("not-found", func(t *testing.T) {
+		statuses, err := c.getReplicaTabletStatuses(config.VitessConfigurationSettings{
+			API:      vtctldApi.URL,
+			Keyspace: "not-found",
+		})
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		if len(statuses) != 0 {
+			t.Fatal("expected 0 statuses")
+		}
+	})
 
-	degradedTablet := statuses[1]
-	if degradedTablet.Health != tabletDegraded {
-		t.Fatal("expected degraded tablet")
-	}
+	t.Run("failed", func(t *testing.T) {
+		vtctldApi.Close() // kill the mock vitess API
+		_, err := c.getReplicaTabletStatuses(config.VitessConfigurationSettings{
+			API: vtctldApi.URL,
+		})
+		if err == nil {
+			t.Fatal("Expected error, got nil")
+		}
+	})
 }
