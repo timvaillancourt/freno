@@ -72,6 +72,8 @@ type Throttler struct {
 
 	nonLowPriorityAppRequestsThrottled *cache.Cache
 	httpClient                         *http.Client
+
+	vitessClient *vitess.Client
 }
 
 func NewThrottler() *Throttler {
@@ -102,7 +104,20 @@ func NewThrottler() *Throttler {
 	}
 	throttler.memcachePath = config.Settings().MemcachePath
 
+	if throttler.hasVitessStores() {
+		throttler.vitessClient = vitess.NewClient()
+	}
+
 	return throttler
+}
+
+func (throttler *Throttler) hasVitessStores() bool {
+	for _, clusterSettings := range config.Settings().Stores.MySQL.Clusters {
+		if !clusterSettings.VitessSettings.IsEmpty() {
+			return true
+		}
+	}
+	return false
 }
 
 func (throttler *Throttler) SetLeaderFunc(isLeaderFunc func() bool) {
@@ -323,7 +338,7 @@ func (throttler *Throttler) refreshMySQLInventory() error {
 				log.Debugf("getting vitess data from %s", clusterSettings.VitessSettings.API)
 				keyspace := clusterSettings.VitessSettings.Keyspace
 				shard := clusterSettings.VitessSettings.Shard
-				tablets, err := vitess.ParseTablets(clusterSettings.VitessSettings)
+				tablets, err := throttler.vitessClient.GetHealthyReplicas(clusterSettings.VitessSettings)
 				if err != nil {
 					return log.Errorf("Unable to get vitess hosts from %s, %s/%s: %+v", clusterSettings.VitessSettings.API, keyspace, shard, err)
 				}

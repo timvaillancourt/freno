@@ -12,8 +12,9 @@ import (
 	"vitess.io/vitess/go/vt/proto/topodata"
 )
 
-func TestParseTablets(t *testing.T) {
-	vitessApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestGetKeyspaceTablets(t *testing.T) {
+	c := NewClient()
+	vtctldApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.String() {
 		case "/api/keyspace/test/tablets/00":
 			data, _ := json.Marshal([]Tablet{
@@ -49,11 +50,11 @@ func TestParseTablets(t *testing.T) {
 			fmt.Fprint(w, "[]")
 		}
 	}))
-	defer vitessApi.Close()
+	defer vtctldApi.Close()
 
 	t.Run("success", func(t *testing.T) {
-		tablets, err := ParseTablets(config.VitessConfigurationSettings{
-			API:         vitessApi.URL,
+		tablets, err := c.GetKeyspaceTablets(config.VitessConfigurationSettings{
+			API:         vtctldApi.URL,
 			Keyspace:    "test",
 			Shard:       "00",
 			TimeoutSecs: 1,
@@ -70,14 +71,14 @@ func TestParseTablets(t *testing.T) {
 			t.Fatalf("Expected hostname %q, got %q", "replica", tablets[0].MysqlHostname)
 		}
 
-		if httpClient.Timeout != time.Second {
-			t.Fatalf("Expected vitess client timeout of %v, got %v", time.Second, httpClient.Timeout)
+		if c.httpClient.Timeout != time.Second {
+			t.Fatalf("Expected vitess client timeout of %v, got %v", time.Second, c.httpClient.Timeout)
 		}
 	})
 
 	t.Run("not-found", func(t *testing.T) {
-		tablets, err := ParseTablets(config.VitessConfigurationSettings{
-			API:      vitessApi.URL,
+		tablets, err := c.GetKeyspaceTablets(config.VitessConfigurationSettings{
+			API:      vtctldApi.URL,
 			Keyspace: "not-found",
 			Shard:    "40-80",
 		})
@@ -89,15 +90,15 @@ func TestParseTablets(t *testing.T) {
 			t.Fatalf("Expected 0 tablets, got %d", len(tablets))
 		}
 
-		if httpClient.Timeout != defaultTimeout {
-			t.Fatalf("Expected vitess client timeout of %v, got %v", defaultTimeout, httpClient.Timeout)
+		if c.httpClient.Timeout != defaultTimeout {
+			t.Fatalf("Expected vitess client timeout of %v, got %v", defaultTimeout, c.httpClient.Timeout)
 		}
 	})
 
 	t.Run("failed", func(t *testing.T) {
-		vitessApi.Close() // kill the mock vitess API
-		_, err := ParseTablets(config.VitessConfigurationSettings{
-			API:      vitessApi.URL,
+		vtctldApi.Close() // kill the mock vitess API
+		_, err := c.GetKeyspaceTablets(config.VitessConfigurationSettings{
+			API:      vtctldApi.URL,
 			Keyspace: "fail",
 			Shard:    "00",
 		})
