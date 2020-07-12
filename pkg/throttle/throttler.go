@@ -104,14 +104,14 @@ func NewThrottler() *Throttler {
 	}
 	throttler.memcachePath = config.Settings().MemcachePath
 
-	if throttler.hasVitessStores() {
+	if throttler.hasMySQLVitessStores() {
 		throttler.vitessClient = vitess.NewClient(config.Settings().Stores.MySQL)
 	}
 
 	return throttler
 }
 
-func (throttler *Throttler) hasVitessStores() bool {
+func (throttler *Throttler) hasMySQLVitessStores() bool {
 	for _, clusterSettings := range config.Settings().Stores.MySQL.Clusters {
 		if !clusterSettings.VitessSettings.IsEmpty() {
 			return true
