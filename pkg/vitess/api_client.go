@@ -41,12 +41,13 @@ func NewClient(settings config.MySQLConfigurationSettings) *Client {
 	}
 }
 
-func (c *Client) setClientTimeout(settings config.VitessConfigurationSettings) {
+func (c *Client) getHTTPClient(settings config.VitessConfigurationSettings) *http.Client {
 	if settings.TimeoutSecs == 0 {
 		c.httpClient.Timeout = defaultTimeout
 	} else {
 		c.httpClient.Timeout = time.Duration(settings.TimeoutSecs) * time.Second
 	}
+	return c.httpClient
 }
 
 func (c *Client) GetHealthyReplicaTablets(settings config.VitessConfigurationSettings) (tablets []*Tablet, err error) {

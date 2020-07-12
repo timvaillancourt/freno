@@ -34,8 +34,7 @@ func (c *Client) getReplicaTabletStatuses(settings config.VitessConfigurationSet
 		constructAPIURL(settings),
 		settings.Keyspace,
 	)
-	c.setClientTimeout(settings)
-	resp, err := c.httpClient.Get(url)
+	resp, err := c.getHTTPClient(settings).Get(url)
 	if err != nil {
 		return nil, err
 	}

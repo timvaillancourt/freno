@@ -36,8 +36,7 @@ func (c *Client) getTablet(settings config.VitessConfigurationSettings, tabletAl
 	}
 
 	url := fmt.Sprintf("%s/tablets/%s-%d", constructAPIURL(settings), tabletAlias.Cell, tabletAlias.Uid)
-	c.setClientTimeout(settings)
-	resp, err := c.httpClient.Get(url)
+	resp, err := c.getHTTPClient(settings).Get(url)
 	if err != nil {
 		return nil, err
 	}
