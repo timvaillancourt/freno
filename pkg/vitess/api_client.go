@@ -49,7 +49,7 @@ func (c *Client) setClientTimeout(settings config.VitessConfigurationSettings) {
 	}
 }
 
-func (c *Client) GetHealthyReplicas(settings config.VitessConfigurationSettings) (tablets []*Tablet, err error) {
+func (c *Client) GetHealthyReplicaTablets(settings config.VitessConfigurationSettings) (tablets []*Tablet, err error) {
 	statuses, err := c.getReplicaTabletStatuses(settings)
 	if err != nil {
 		return tablets, err

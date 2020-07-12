@@ -11,7 +11,7 @@ import (
 	"vitess.io/vitess/go/vt/proto/topodata"
 )
 
-func TestGetHealthyReplicas(t *testing.T) {
+func TestGetHealthyReplicaTablets(t *testing.T) {
 	vtctldApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.String() {
 		case "/api/tablets/test-123456":
@@ -50,7 +50,7 @@ func TestGetHealthyReplicas(t *testing.T) {
 	defer vtctldApi.Close()
 
 	c := NewClient(config.MySQLConfigurationSettings{})
-	tablets, err := c.GetHealthyReplicas(config.VitessConfigurationSettings{
+	tablets, err := c.GetHealthyReplicaTablets(config.VitessConfigurationSettings{
 		API:      vtctldApi.URL,
 		Keyspace: "test_ks",
 	})
