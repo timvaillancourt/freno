@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/github/freno/pkg/config"
+	"github.com/outbrain/golib/log"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -55,12 +57,28 @@ func (c *Client) GetHealthyReplicaTablets(settings config.VitessConfigurationSet
 	if err != nil {
 		return tablets, err
 	}
+
+	var wg sync.WaitGroup
+	tabletsChan := make(chan *Tablet, len(statuses))
 	for _, status := range statuses {
-		if status.Health != tabletHealthy {
-			continue
-		}
-		tablet, err := c.getTablet(settings, status.Alias)
-		if err == nil {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, status *tabletStatus) {
+			defer wg.Done()
+			if status.Health != tabletHealthy {
+				return
+			}
+			tablet, err := c.getTablet(settings, status.Alias)
+			if err != nil {
+				log.Errorf("Unable to get tablet alias '%s-%d' from vtctld API: %v", status.Alias.Cell, status.Alias.Uid, err)
+			}
+			tabletsChan <- tablet
+		}(&wg, status)
+	}
+	wg.Wait()
+	close(tabletsChan)
+
+	for tablet := range tabletsChan {
+		if tablet != nil {
 			tablets = append(tablets, tablet)
 		}
 	}
