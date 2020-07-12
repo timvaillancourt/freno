@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	defaultTabletCacheExpiry = 3 * time.Minute
-	defaultTimeout           = time.Duration(5) * time.Second
+	defaultTabletCacheTTL = time.Duration(10) * time.Minute
+	defaultTimeout        = time.Duration(5) * time.Second
 )
 
 func constructAPIURL(settings config.VitessConfigurationSettings) (url string) {
@@ -28,12 +28,16 @@ type Client struct {
 	tabletCache *cache.Cache
 }
 
-func NewClient() *Client {
+func NewClient(settings config.MySQLConfigurationSettings) *Client {
+	defaultTTL := defaultTabletCacheTTL
+	if settings.VitessTabletCacheTTLSecs > 0 {
+		defaultTTL = time.Duration(settings.VitessTabletCacheTTLSecs) * time.Second
+	}
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: defaultTimeout,
 		},
-		tabletCache: cache.New(defaultTabletCacheExpiry, time.Second),
+		tabletCache: cache.New(defaultTTL, time.Second),
 	}
 }
 

@@ -17,8 +17,8 @@ type Tablet struct {
 	MysqlPort     int32  `json:"mysql_port,omitempty"`
 }
 
-func tabletCacheKey(tabletAlias *topodata.TabletAlias) string {
-	return fmt.Sprintf("%s-%d", tabletAlias.Cell, tabletAlias.Uid)
+func tabletCacheKey(settings config.VitessConfigurationSettings, tabletAlias *topodata.TabletAlias) string {
+	return fmt.Sprintf("%s-%s-%d", settings.Keyspace, tabletAlias.Cell, tabletAlias.Uid)
 }
 
 func (c *Client) cacheTablet(settings config.VitessConfigurationSettings, tabletAlias *topodata.TabletAlias, tablet *Tablet) {
@@ -26,12 +26,12 @@ func (c *Client) cacheTablet(settings config.VitessConfigurationSettings, tablet
 	if settings.TabletCacheTTLSecs > 0 {
 		ttl = time.Duration(settings.TabletCacheTTLSecs) * time.Second
 	}
-	c.tabletCache.Set(tabletCacheKey(tabletAlias), tablet, ttl)
+	c.tabletCache.Set(tabletCacheKey(settings, tabletAlias), tablet, ttl)
 }
 
 // GetTablet reads from vitess /api/tablets/<tabletAlias> and returns a Tablet struct
 func (c *Client) getTablet(settings config.VitessConfigurationSettings, tabletAlias *topodata.TabletAlias) (tablet *Tablet, err error) {
-	if tablet, found := c.tabletCache.Get(tabletCacheKey(tabletAlias)); found {
+	if tablet, found := c.tabletCache.Get(tabletCacheKey(settings, tabletAlias)); found {
 		return tablet.(*Tablet), nil
 	}
 

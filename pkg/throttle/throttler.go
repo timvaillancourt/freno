@@ -105,7 +105,7 @@ func NewThrottler() *Throttler {
 	throttler.memcachePath = config.Settings().MemcachePath
 
 	if throttler.hasVitessStores() {
-		throttler.vitessClient = vitess.NewClient()
+		throttler.vitessClient = vitess.NewClient(config.Settings().Stores.MySQL)
 	}
 
 	return throttler

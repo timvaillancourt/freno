@@ -30,9 +30,10 @@ func TestGetTablet(t *testing.T) {
 	}))
 	defer vtctldApi.Close()
 
-	c := NewClient()
+	c := NewClient(config.MySQLConfigurationSettings{})
 	settings := config.VitessConfigurationSettings{
-		API: vtctldApi.URL,
+		API:      vtctldApi.URL,
+		Keyspace: "test_ks",
 	}
 	t.Run("success", func(t *testing.T) {
 		settings.TimeoutSecs = 1
@@ -45,13 +46,14 @@ func TestGetTablet(t *testing.T) {
 		if tablet.MysqlHostname != "replica1" {
 			t.Fatalf("Expected hostname %q, got %q", "replica", tablet.MysqlHostname)
 		}
-
 		if c.httpClient.Timeout != time.Second {
 			t.Fatalf("Expected vitess client timeout of %v, got %v", time.Second, c.httpClient.Timeout)
 		}
-
-		if _, found := c.tabletCache.Get(tabletCacheKey(tabletAlias)); !found {
-			t.Fatalf("expected key %v in cache", tabletCacheKey(tabletAlias))
+		if _, found := c.tabletCache.Get(tabletCacheKey(settings, tabletAlias)); !found {
+			t.Fatalf("expected key %v in cache", tabletCacheKey(settings, tabletAlias))
+		}
+		if len(c.tabletCache.Items()) != 1 {
+			t.Fatal("expected only 1 cached item")
 		}
 	})
 
@@ -71,8 +73,8 @@ func TestGetTablet(t *testing.T) {
 			t.Fatalf("Expected vitess client timeout of %v, got %v", defaultTimeout, c.httpClient.Timeout)
 		}
 
-		if _, found := c.tabletCache.Get(tabletCacheKey(tabletAlias)); found {
-			t.Fatalf("expected key %v to be absent in cache", tabletCacheKey(tabletAlias))
+		if _, found := c.tabletCache.Get(tabletCacheKey(settings, tabletAlias)); found {
+			t.Fatalf("expected key %v to be absent in cache", tabletCacheKey(settings, tabletAlias))
 		}
 	})
 

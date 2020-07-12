@@ -8,7 +8,7 @@ type VitessConfigurationSettings struct {
 	API                string
 	Keyspace           string
 	Shard              string
-	TabletCacheTTLSecs uint
+	TabletCacheTTLSecs int
 	TimeoutSecs        uint
 }
 

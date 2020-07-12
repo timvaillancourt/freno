@@ -49,7 +49,7 @@ func TestGetHealthyReplicas(t *testing.T) {
 	}))
 	defer vtctldApi.Close()
 
-	c := NewClient()
+	c := NewClient(config.MySQLConfigurationSettings{})
 	tablets, err := c.GetHealthyReplicas(config.VitessConfigurationSettings{
 		API:      vtctldApi.URL,
 		Keyspace: "test_ks",

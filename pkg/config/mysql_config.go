@@ -46,18 +46,19 @@ func (settings *MySQLClusterConfigurationSettings) postReadAdjustments() error {
 }
 
 type MySQLConfigurationSettings struct {
-	User                 string
-	Password             string
-	MetricQuery          string
-	CacheMillis          int // optional, if defined then probe result will be cached, and future probes may use cached value
-	ThrottleThreshold    float64
-	Port                 int      // Specify if different than 3306; applies to all clusters
-	IgnoreDialTcpErrors  bool     // Skip hosts where a metric cannot be retrieved due to TCP dial errors
-	IgnoreHostsCount     int      // Number of hosts that can be skipped/ignored even on error or on exceeding theesholds
-	IgnoreHostsThreshold float64  // Threshold beyond which IgnoreHostsCount applies (default: 0)
-	HttpCheckPort        int      // port for HTTP check. -1 to disable.
-	HttpCheckPath        string   // If non-empty, requires HttpCheckPort
-	IgnoreHosts          []string // If non empty, substrings to indicate hosts to be ignored/skipped
+	User                     string
+	Password                 string
+	MetricQuery              string
+	CacheMillis              int // optional, if defined then probe result will be cached, and future probes may use cached value
+	ThrottleThreshold        float64
+	Port                     int      // Specify if different than 3306; applies to all clusters
+	IgnoreDialTcpErrors      bool     // Skip hosts where a metric cannot be retrieved due to TCP dial errors
+	IgnoreHostsCount         int      // Number of hosts that can be skipped/ignored even on error or on exceeding theesholds
+	IgnoreHostsThreshold     float64  // Threshold beyond which IgnoreHostsCount applies (default: 0)
+	HttpCheckPort            int      // port for HTTP check. -1 to disable.
+	HttpCheckPath            string   // If non-empty, requires HttpCheckPort
+	IgnoreHosts              []string // If non empty, substrings to indicate hosts to be ignored/skipped
+	VitessTabletCacheTTLSecs int      // Number of seconds to cache tablet info from Vitess
 
 	Clusters map[string](*MySQLClusterConfigurationSettings) // cluster name -> cluster config
 }

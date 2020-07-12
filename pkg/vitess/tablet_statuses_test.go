@@ -38,8 +38,8 @@ func TestGetReplicaTabletStatuses(t *testing.T) {
 			bytes, _ := json.Marshal(data)
 			fmt.Fprint(w, string(bytes))
 		case "/api/tablet_statuses/?cell=all&keyspace=not-found&metric=health&type=replica":
-			w.WriteHeader(http.StatusNotFound)
-			data := []*tabletStatuses{{}}
+			w.WriteHeader(http.StatusOK)  // this API returns a 200 on a keyspace that does not exist
+			data := []*tabletStatuses{{}} // and it returns and empty tablet status
 			bytes, _ := json.Marshal(data)
 			fmt.Fprint(w, string(bytes))
 		default:
@@ -48,7 +48,7 @@ func TestGetReplicaTabletStatuses(t *testing.T) {
 	}))
 	defer vtctldApi.Close()
 
-	c := NewClient()
+	c := NewClient(config.MySQLConfigurationSettings{})
 
 	t.Run("success", func(t *testing.T) {
 		statuses, err := c.getReplicaTabletStatuses(config.VitessConfigurationSettings{
