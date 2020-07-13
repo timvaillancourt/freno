@@ -26,16 +26,12 @@ func TestGetHealthyReplicaTablets(t *testing.T) {
 					Aliases: [][]*topodata.TabletAlias{
 						{
 							{Cell: "test", Uid: 123456},
-						},
-						{
 							{Cell: "test", Uid: 123457},
 						},
 					},
 					Data: [][]tabletHealthState{
 						{
 							tabletHealthy,
-						},
-						{
 							tabletUnhealthy,
 						},
 					},

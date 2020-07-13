@@ -82,7 +82,7 @@ func TestGetReplicaTabletStatuses(t *testing.T) {
 			t.Fatalf("expected tablet alias with cell='va3' and uid=123458, got %v", otherHealthyTablet.Alias)
 		}
 		if otherHealthyTablet.Health != tabletHealthy {
-			t.Fatal("expected degraded tablet")
+			t.Fatal("expected healthy tablet")
 		}
 	})
 

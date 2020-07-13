@@ -33,7 +33,7 @@ type tabletStatus struct {
 
 // getReplicaTabletStatuses reads from vtctld /api/tablet_statuses/?<params...>
 // and parses the result into a slice of tabletStatus structs
-func (c *Client) getReplicaTabletStatuses(settings config.VitessConfigurationSettings) ([]*tabletStatus, error) {
+func (c *Client) getReplicaTabletStatuses(settings config.VitessConfigurationSettings) (tablets []*tabletStatus, err error) {
 	url := fmt.Sprintf("%s/tablet_statuses/?cell=all&keyspace=%s&metric=health&type=replica",
 		constructAPIURL(settings),
 		settings.Keyspace,
@@ -61,12 +61,11 @@ func (c *Client) getReplicaTabletStatuses(settings config.VitessConfigurationSet
 	}
 
 	statuses := statusesSlice[0]
-	tablets := make([]*tabletStatus, 0)
 	for cellIdx, cellAliases := range statuses.Aliases {
-		for idx, cellAlias := range cellAliases {
+		for tabletIdx, cellAlias := range cellAliases {
 			tablets = append(tablets, &tabletStatus{
 				Alias:  cellAlias,
-				Health: statuses.Data[cellIdx][idx],
+				Health: statuses.Data[cellIdx][tabletIdx],
 			})
 		}
 	}
