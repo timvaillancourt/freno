@@ -17,6 +17,7 @@ const (
 	defaultTimeout        = time.Duration(5) * time.Second
 )
 
+// constructAPIURL returns a string of the base URL of the vtctld API
 func constructAPIURL(settings config.VitessConfigurationSettings) (url string) {
 	api := strings.TrimRight(settings.API, "/")
 	if !strings.HasSuffix(api, "/api") {
@@ -25,24 +26,27 @@ func constructAPIURL(settings config.VitessConfigurationSettings) (url string) {
 	return api
 }
 
+// Client is a client for the vtctld API
 type Client struct {
 	httpClient  *http.Client
 	tabletCache *cache.Cache
 }
 
+// NewClient returns a client for the vtctld API
 func NewClient(settings config.MySQLConfigurationSettings) *Client {
-	defaultTTL := defaultTabletCacheTTL
+	defaultTabletCacheTTL := defaultTabletCacheTTL
 	if settings.VitessTabletCacheTTLSecs > 0 {
-		defaultTTL = time.Duration(settings.VitessTabletCacheTTLSecs) * time.Second
+		defaultTabletCacheTTL = time.Duration(settings.VitessTabletCacheTTLSecs) * time.Second
 	}
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: defaultTimeout,
 		},
-		tabletCache: cache.New(defaultTTL, time.Second),
+		tabletCache: cache.New(defaultTabletCacheTTL, time.Second),
 	}
 }
 
+// getHTTPClient returns an HTTP client for the vtctld API
 func (c *Client) getHTTPClient(settings config.VitessConfigurationSettings) *http.Client {
 	if settings.TimeoutSecs == 0 {
 		c.httpClient.Timeout = defaultTimeout
@@ -52,6 +56,7 @@ func (c *Client) getHTTPClient(settings config.VitessConfigurationSettings) *htt
 	return c.httpClient
 }
 
+// GetHealthyReplicaTablets returns a slice of healthy vttables using the vtctld API
 func (c *Client) GetHealthyReplicaTablets(settings config.VitessConfigurationSettings) (tablets []*Tablet, err error) {
 	statuses, err := c.getReplicaTabletStatuses(settings)
 	if err != nil {
@@ -62,7 +67,7 @@ func (c *Client) GetHealthyReplicaTablets(settings config.VitessConfigurationSet
 	tabletsChan := make(chan *Tablet, len(statuses))
 	for _, status := range statuses {
 		wg.Add(1)
-		go func(wg *sync.WaitGroup, status *tabletStatus) {
+		go func(settings config.VitessConfigurationSettings, wg *sync.WaitGroup, status *tabletStatus) {
 			defer wg.Done()
 			if status.Health != tabletHealthy {
 				return
@@ -72,7 +77,7 @@ func (c *Client) GetHealthyReplicaTablets(settings config.VitessConfigurationSet
 				log.Errorf("Unable to get tablet alias '%s-%d' from vtctld API: %v", status.Alias.Cell, status.Alias.Uid, err)
 			}
 			tabletsChan <- tablet
-		}(&wg, status)
+		}(settings, &wg, status)
 	}
 	wg.Wait()
 	close(tabletsChan)

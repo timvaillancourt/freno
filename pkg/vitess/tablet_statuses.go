@@ -19,16 +19,20 @@ const (
 	tabletUnhealthy tabletHealthState = 2
 )
 
+// tabletStatuses represents a response from a vtctld /api/tablet_statuses call
 type tabletStatuses struct {
 	Aliases [][]*topodata.TabletAlias
 	Data    [][]tabletHealthState
 }
 
+// tabletStatus represents the status of a tablet
 type tabletStatus struct {
 	Alias  *topodata.TabletAlias
 	Health tabletHealthState
 }
 
+// getReplicaTabletStatuses reads from vtctld /api/tablet_statuses/?<params...>
+// and parses the result into a slice of tabletStatus structs
 func (c *Client) getReplicaTabletStatuses(settings config.VitessConfigurationSettings) ([]*tabletStatus, error) {
 	url := fmt.Sprintf("%s/tablet_statuses/?cell=all&keyspace=%s&metric=health&type=replica",
 		constructAPIURL(settings),
@@ -39,7 +43,6 @@ func (c *Client) getReplicaTabletStatuses(settings config.VitessConfigurationSet
 		return nil, err
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != 200 {
 		return nil, err
 	}
@@ -59,11 +62,16 @@ func (c *Client) getReplicaTabletStatuses(settings config.VitessConfigurationSet
 
 	statuses := statusesSlice[0]
 	tablets := make([]*tabletStatus, 0)
-	for i, alias := range statuses.Aliases {
-		tablets = append(tablets, &tabletStatus{
-			Alias:  alias[0],
-			Health: statuses.Data[i][0],
-		})
+	for cellIdx, cellAliases := range statuses.Aliases {
+		for idx, cellAlias := range cellAliases {
+			tablets = append(tablets, &tabletStatus{
+				Alias:  cellAlias,
+				Health: statuses.Data[cellIdx][idx],
+			})
+		}
+	}
+	if len(tablets) < 1 {
+		return nil, fmt.Errorf("found no tablets")
 	}
 
 	return tablets, err

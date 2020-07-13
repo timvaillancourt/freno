@@ -36,7 +36,7 @@ func TestGetHealthyReplicaTablets(t *testing.T) {
 							tabletHealthy,
 						},
 						{
-							tabletDegraded,
+							tabletUnhealthy,
 						},
 					},
 				},
@@ -49,7 +49,9 @@ func TestGetHealthyReplicaTablets(t *testing.T) {
 	}))
 	defer vtctldApi.Close()
 
-	c := NewClient(config.MySQLConfigurationSettings{})
+	c := NewClient(config.MySQLConfigurationSettings{
+		VitessTabletCacheTTLSecs: 5,
+	})
 	tablets, err := c.GetHealthyReplicaTablets(config.VitessConfigurationSettings{
 		API:      vtctldApi.URL,
 		Keyspace: "test_ks",
@@ -57,7 +59,6 @@ func TestGetHealthyReplicaTablets(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-
 	if len(tablets) != 1 {
 		t.Fatalf("expected only 1 healthy tablet, got %d", len(tablets))
 	}

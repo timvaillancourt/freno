@@ -40,14 +40,14 @@ func TestGetTablet(t *testing.T) {
 		tabletAlias := &topodata.TabletAlias{Cell: "test", Uid: 123456}
 		tablet, err := c.getTablet(settings, tabletAlias)
 		if err != nil {
-			t.Fatalf("Expected no error, got %q", err)
+			t.Fatalf("expected no error, got %q", err)
 		}
 
 		if tablet.MysqlHostname != "replica1" {
-			t.Fatalf("Expected hostname %q, got %q", "replica", tablet.MysqlHostname)
+			t.Fatalf("expected hostname %q, got %q", "replica", tablet.MysqlHostname)
 		}
 		if c.httpClient.Timeout != time.Second {
-			t.Fatalf("Expected vitess client timeout of %v, got %v", time.Second, c.httpClient.Timeout)
+			t.Fatalf("expected vitess client timeout of %v, got %v", time.Second, c.httpClient.Timeout)
 		}
 		if _, found := c.tabletCache.Get(tabletCacheKey(settings, tabletAlias)); !found {
 			t.Fatalf("expected key %v in cache", tabletCacheKey(settings, tabletAlias))
@@ -61,8 +61,8 @@ func TestGetTablet(t *testing.T) {
 		settings.TimeoutSecs = 0
 		tabletAlias := &topodata.TabletAlias{Cell: "test", Uid: 1}
 		tablet, err := c.getTablet(settings, tabletAlias)
-		if err != nil {
-			t.Fatalf("Expected no error, got %q", err)
+		if err == nil {
+			t.Fatal("expected an error, go nil")
 		}
 
 		if tablet != nil {
@@ -70,7 +70,7 @@ func TestGetTablet(t *testing.T) {
 		}
 
 		if c.httpClient.Timeout != defaultTimeout {
-			t.Fatalf("Expected vitess client timeout of %v, got %v", defaultTimeout, c.httpClient.Timeout)
+			t.Fatalf("expected vitess client timeout of %v, got %v", defaultTimeout, c.httpClient.Timeout)
 		}
 
 		if _, found := c.tabletCache.Get(tabletCacheKey(settings, tabletAlias)); found {
@@ -82,7 +82,7 @@ func TestGetTablet(t *testing.T) {
 		vtctldApi.Close() // kill the mock vitess API
 		_, err := c.getTablet(settings, &topodata.TabletAlias{Cell: "test", Uid: 123})
 		if err == nil {
-			t.Fatal("Expected error, got nil")
+			t.Fatal("expected error, got nil")
 		}
 	})
 }

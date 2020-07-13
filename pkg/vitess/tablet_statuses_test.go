@@ -19,18 +19,20 @@ func TestGetReplicaTabletStatuses(t *testing.T) {
 				{
 					Aliases: [][]*topodata.TabletAlias{
 						{
-							{Cell: "test", Uid: 123456},
+							{Cell: "ac4", Uid: 123456},
+							{Cell: "ac4", Uid: 123457},
 						},
 						{
-							{Cell: "test", Uid: 123457},
+							{Cell: "va3", Uid: 123458},
 						},
 					},
 					Data: [][]tabletHealthState{
 						{
 							tabletHealthy,
+							tabletDegraded,
 						},
 						{
-							tabletDegraded,
+							tabletHealthy,
 						},
 					},
 				},
@@ -58,13 +60,13 @@ func TestGetReplicaTabletStatuses(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%v", err)
 		}
-		if len(statuses) != 2 {
-			t.Fatal("expected only 2 tablets")
+		if len(statuses) != 3 {
+			t.Fatal("expected only 3 tablets")
 		}
 
 		healthyTablet := statuses[0]
-		if healthyTablet.Alias.Cell != "test" || healthyTablet.Alias.Uid != 123456 {
-			t.Fatalf("expected tablet alias with cell='test' and uid=123456, got %v", healthyTablet.Alias)
+		if healthyTablet.Alias.Cell != "ac4" || healthyTablet.Alias.Uid != 123456 {
+			t.Fatalf("expected tablet alias with cell='ac4' and uid=123456, got %v", healthyTablet.Alias)
 		}
 		if healthyTablet.Health != tabletHealthy {
 			t.Fatal("expected healthy tablet")
@@ -74,6 +76,14 @@ func TestGetReplicaTabletStatuses(t *testing.T) {
 		if degradedTablet.Health != tabletDegraded {
 			t.Fatal("expected degraded tablet")
 		}
+
+		otherHealthyTablet := statuses[2]
+		if otherHealthyTablet.Alias.Cell != "va3" || otherHealthyTablet.Alias.Uid != 123458 {
+			t.Fatalf("expected tablet alias with cell='va3' and uid=123458, got %v", otherHealthyTablet.Alias)
+		}
+		if otherHealthyTablet.Health != tabletHealthy {
+			t.Fatal("expected degraded tablet")
+		}
 	})
 
 	t.Run("not-found", func(t *testing.T) {
@@ -81,8 +91,8 @@ func TestGetReplicaTabletStatuses(t *testing.T) {
 			API:      vtctldApi.URL,
 			Keyspace: "not-found",
 		})
-		if err != nil {
-			t.Fatalf("%v", err)
+		if err == nil {
+			t.Fatal("expected an error, got nil")
 		}
 		if len(statuses) != 0 {
 			t.Fatal("expected 0 statuses")
@@ -95,7 +105,7 @@ func TestGetReplicaTabletStatuses(t *testing.T) {
 			API: vtctldApi.URL,
 		})
 		if err == nil {
-			t.Fatal("Expected error, got nil")
+			t.Fatal("expected error, got nil")
 		}
 	})
 }
