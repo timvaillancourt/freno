@@ -1,11 +1,12 @@
 package config
 
 //
-// HAProxy-specific configuration
+// Vitess-specific configuration
 //
 
 type VitessConfigurationSettings struct {
 	API                string
+	Cells              []string
 	Keyspace           string
 	Shard              string
 	TabletCacheTTLSecs int
