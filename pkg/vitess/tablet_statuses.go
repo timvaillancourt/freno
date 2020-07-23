@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 
 	"github.com/github/freno/pkg/config"
 	"vitess.io/vitess/go/vt/proto/topodata"
@@ -34,39 +35,47 @@ type tabletStatus struct {
 // getReplicaTabletStatuses reads from vtctld /api/tablet_statuses/?<params...>
 // and parses the result into a slice of tabletStatus structs
 func (c *Client) getReplicaTabletStatuses(settings config.VitessConfigurationSettings) (tablets []*tabletStatus, err error) {
-	url := fmt.Sprintf("%s/tablet_statuses/?cell=all&keyspace=%s&metric=health&type=replica",
-		constructAPIURL(settings),
-		settings.Keyspace,
-	)
-	resp, err := c.getHTTPClient(settings).Get(url)
-	if err != nil {
-		return nil, err
+	cells := ParseCells(settings)
+	if len(cells) == 0 {
+		cells = []string{"all"}
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return nil, err
-	}
+	for _, cell := range cells {
+		url := fmt.Sprintf("%s/tablet_statuses/?cell=%s&keyspace=%s&metric=health&type=replica",
+			constructAPIURL(settings),
+			cell,
+			settings.Keyspace,
+		)
+		resp, err := c.getHTTPClient(settings).Get(url)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("%v", resp.Status)
+		}
 
-	statusesSlice := make([]tabletStatuses, 0)
-	if err := json.Unmarshal(body, &statusesSlice); err != nil {
-		return nil, err
-	}
-	if len(statusesSlice) != 1 {
-		return nil, err
-	}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
 
-	statuses := statusesSlice[0]
-	for cellIdx, cellAliases := range statuses.Aliases {
-		for tabletIdx, cellAlias := range cellAliases {
-			tablets = append(tablets, &tabletStatus{
-				Alias:  cellAlias,
-				Health: statuses.Data[cellIdx][tabletIdx],
-			})
+		statusesSlice := make([]tabletStatuses, 0)
+		if err := json.Unmarshal(body, &statusesSlice); err != nil {
+			return nil, err
+		}
+		if len(statusesSlice) != 1 {
+			return nil, err
+		}
+
+		statuses := statusesSlice[0]
+		for cellIdx, cellAliases := range statuses.Aliases {
+			for tabletIdx, cellAlias := range cellAliases {
+				tablets = append(tablets, &tabletStatus{
+					Alias:  cellAlias,
+					Health: statuses.Data[cellIdx][tabletIdx],
+				})
+			}
 		}
 	}
 	if len(tablets) < 1 {

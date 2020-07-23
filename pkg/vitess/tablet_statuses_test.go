@@ -14,16 +14,33 @@ import (
 func TestGetReplicaTabletStatuses(t *testing.T) {
 	vtctldApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.String() {
+		case "/api/tablet_statuses/?cell=cell2&keyspace=test_ks&metric=health&type=replica":
+			data := []*tabletStatuses{
+				{
+					Aliases: [][]*topodata.TabletAlias{
+						{
+							{Cell: "cell2", Uid: 123458},
+						},
+					},
+					Data: [][]tabletHealthState{
+						{
+							tabletHealthy,
+						},
+					},
+				},
+			}
+			bytes, _ := json.Marshal(data)
+			fmt.Fprint(w, string(bytes))
 		case "/api/tablet_statuses/?cell=all&keyspace=test_ks&metric=health&type=replica":
 			data := []*tabletStatuses{
 				{
 					Aliases: [][]*topodata.TabletAlias{
 						{
-							{Cell: "ac4", Uid: 123456},
-							{Cell: "ac4", Uid: 123457},
+							{Cell: "cell1", Uid: 123456},
+							{Cell: "cell1", Uid: 123457},
 						},
 						{
-							{Cell: "va3", Uid: 123458},
+							{Cell: "cell2", Uid: 123458},
 						},
 					},
 					Data: [][]tabletHealthState{
@@ -65,8 +82,8 @@ func TestGetReplicaTabletStatuses(t *testing.T) {
 		}
 
 		healthyTablet := statuses[0]
-		if healthyTablet.Alias.Cell != "ac4" || healthyTablet.Alias.Uid != 123456 {
-			t.Fatalf("expected tablet alias with cell='ac4' and uid=123456, got %v", healthyTablet.Alias)
+		if healthyTablet.Alias.Cell != "cell1" || healthyTablet.Alias.Uid != 123456 {
+			t.Fatalf("expected tablet alias with cell='cell1' and uid=123456, got %v", healthyTablet.Alias)
 		}
 		if healthyTablet.Health != tabletHealthy {
 			t.Fatal("expected healthy tablet")
@@ -78,11 +95,26 @@ func TestGetReplicaTabletStatuses(t *testing.T) {
 		}
 
 		otherHealthyTablet := statuses[2]
-		if otherHealthyTablet.Alias.Cell != "va3" || otherHealthyTablet.Alias.Uid != 123458 {
-			t.Fatalf("expected tablet alias with cell='va3' and uid=123458, got %v", otherHealthyTablet.Alias)
+		if otherHealthyTablet.Alias.Cell != "cell2" || otherHealthyTablet.Alias.Uid != 123458 {
+			t.Fatalf("expected tablet alias with cell='cell2' and uid=123458, got %v", otherHealthyTablet.Alias)
 		}
 		if otherHealthyTablet.Health != tabletHealthy {
 			t.Fatal("expected healthy tablet")
+		}
+	})
+
+	t.Run("with-cell", func(t *testing.T) {
+		statuses, _ := c.getReplicaTabletStatuses(config.VitessConfigurationSettings{
+			API:      vtctldApi.URL,
+			Cells:    []string{"cell2"},
+			Keyspace: "test_ks",
+		})
+		if len(statuses) != 1 {
+			t.Fatal("expected only 1 tablet in cell2")
+		}
+
+		if statuses[0].Alias.Cell != "cell2" {
+			t.Fatalf("expected cell %q, got %q", "cell2", statuses[0].Alias.Cell)
 		}
 	})
 

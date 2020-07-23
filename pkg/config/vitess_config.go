@@ -11,6 +11,7 @@ type VitessConfigurationSettings struct {
 	Shard              string
 	TabletCacheTTLSecs int
 	TimeoutSecs        uint
+	RealtimeStats      bool
 }
 
 func (settings *VitessConfigurationSettings) IsEmpty() bool {

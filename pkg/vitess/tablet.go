@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"time"
 
 	"github.com/github/freno/pkg/config"
@@ -46,7 +47,7 @@ func (c *Client) getTablet(settings config.VitessConfigurationSettings, tabletAl
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 200 {
+	if resp.StatusCode == http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
